@@ -14,6 +14,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAppStore, AccommodationEntry } from '../store/useAppStore';
 import { Sparkle, Dot } from '../components/TravelDecorations';
+import {
+  SuitcaseIcon, PdfIcon, GmailIcon, EditPencilIcon, ReuseIcon,
+  UploadCloudIcon, CalendarIcon, ClockIcon, MapPinIcon,
+  CheckIcon, ChevronRightIcon, LockIcon, ControlIcon, LightningIcon,
+  getAmenityIcon, getPlatformIcon, HouseIcon, HotelIcon, GlobeIcon,
+  ArrowLeftIcon, CloseIcon, PlusIcon, DownloadIcon,
+} from '../components/TravelBuddyIcons';
 
 const { width } = Dimensions.get('window');
 
@@ -27,23 +34,43 @@ const PLATFORM_URLS: Record<string, string> = {
   Agoda: 'https://www.agoda.com',
 };
 
-const PLATFORM_ICONS: Record<string, string> = {
-  Airbnb: '🏠',
-  'Booking.com': '🏨',
-  Agoda: '🌐',
-  Other: '📋',
-};
-
 const ALL_AMENITIES = [
-  { name: 'WiFi', emoji: '📶' },
-  { name: 'Breakfast', emoji: '🍳' },
-  { name: 'Pool', emoji: '🏊' },
-  { name: 'AC', emoji: '❄️' },
-  { name: 'Parking', emoji: '🅿️' },
-  { name: 'Kitchen', emoji: '🍽️' },
-  { name: 'Workspace', emoji: '💻' },
-  { name: 'Gym', emoji: '🏋️' },
-  { name: 'Hot tub', emoji: '🛁' },
+  { name: 'WiFi', label: 'WiFi' },
+  { name: 'Breakfast', label: 'Breakfast' },
+  { name: 'Pool', label: 'Pool' },
+  { name: 'AC', label: 'AC' },
+  { name: 'Parking', label: 'Parking' },
+  { name: 'Kitchen', label: 'Kitchen' },
+  { name: 'Workspace', label: 'Workspace' },
+  { name: 'Gym', label: 'Gym' },
+  { name: 'Hot tub', label: 'Hot tub' },
+];
+
+const PREVIOUS_TRIPS = [
+  {
+    id: 'prev1',
+    name: 'Villa Padi Ubud',
+    location: 'Ubud, Bali',
+    dates: 'May 2024',
+    platform: 'Airbnb',
+    nights: 4,
+  },
+  {
+    id: 'prev2',
+    name: 'The Kayon Resort',
+    location: 'Ubud, Bali',
+    dates: 'May 2024',
+    platform: 'Booking.com',
+    nights: 3,
+  },
+  {
+    id: 'prev3',
+    name: 'Lombok Beach Villa',
+    location: 'Lombok, Indonesia',
+    dates: 'May 2024',
+    platform: 'Agoda',
+    nights: 5,
+  },
 ];
 
 const GMAIL_RESULTS = [
@@ -52,7 +79,6 @@ const GMAIL_RESULTS = [
     name: 'Villa Padi Ubud',
     dates: '16 – 20 May 2024',
     platform: 'Airbnb',
-    emoji: '🏠',
     selected: true,
   },
   {
@@ -60,7 +86,6 @@ const GMAIL_RESULTS = [
     name: 'The Kayon Resort',
     dates: '22 – 25 May 2024',
     platform: 'Booking.com',
-    emoji: '🏨',
     selected: true,
   },
   {
@@ -68,7 +93,6 @@ const GMAIL_RESULTS = [
     name: 'Lombok Beach Villa',
     dates: '27 – 31 May 2024',
     platform: 'Agoda',
-    emoji: '🏖️',
     selected: false,
   },
 ];
@@ -108,13 +132,13 @@ const fStyles = StyleSheet.create({
 
 // ─── Helper: Date/Time input with icon ──────────────────────────────────────
 function DateTimeInput({ label, placeholder, value, onChangeText, icon }: {
-  label: string; placeholder: string; value: string; onChangeText: (t: string) => void; icon: string;
+  label: string; placeholder: string; value: string; onChangeText: (t: string) => void; icon: 'calendar' | 'clock';
 }) {
   return (
     <View style={{ marginBottom: 14, flex: 1 }}>
       <Text style={fStyles.label}>{label}</Text>
       <View style={dtStyles.inputWrap}>
-        <Text style={dtStyles.icon}>{icon}</Text>
+        {icon === 'calendar' ? <CalendarIcon size={18} color="#666" /> : <ClockIcon size={18} color="#666" />}
         <TextInput
           style={dtStyles.input}
           placeholder={placeholder}
@@ -133,12 +157,12 @@ const dtStyles = StyleSheet.create({
     backgroundColor: '#F5F5F5', borderRadius: 12, borderWidth: 1, borderColor: '#EBEBEB',
     paddingHorizontal: 12, paddingVertical: 10, gap: 8,
   },
-  icon: { fontSize: 18 },
   input: { flex: 1, fontSize: 15, color: '#1A1A1A', paddingVertical: 3 },
 });
 
-// ─── Helper: Step indicator ─────────────────────────────────────────────────
+// ─── Helper: Step indicator with labels ─────────────────────────────────────
 function StepIndicator({ current, total }: { current: number; total: number }) {
+  const labels = ['Stay Details', 'Dates', 'Amenities', 'Review'];
   return (
     <View style={stepStyles.container}>
       {Array.from({ length: total }).map((_, i) => {
@@ -147,13 +171,16 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
         const isDone = step < current;
         return (
           <React.Fragment key={step}>
-            <View style={[stepStyles.dot, isActive && stepStyles.dotActive, isDone && stepStyles.dotDone]}>
-              <Text style={[stepStyles.dotText, (isActive || isDone) && stepStyles.dotTextActive]}>
-                {isDone ? '✓' : step}
-              </Text>
+            <View style={stepStyles.stepCol}>
+              <View style={[stepStyles.dot, isActive && stepStyles.dotActive, isDone && stepStyles.dotDone]}>
+                {isDone ? <CheckIcon size={14} color="#fff" /> : <Text style={[stepStyles.dotText, (isActive || isDone) && stepStyles.dotTextActive]}>{step}</Text>}
+              </View>
+              <Text style={[stepStyles.label, isActive && stepStyles.labelActive]}>{labels[i]}</Text>
             </View>
             {step < total && (
-              <View style={[stepStyles.line, isDone && stepStyles.lineDone]} />
+              <View style={stepStyles.lineWrap}>
+                <View style={[stepStyles.line, isDone && stepStyles.lineDone]} />
+              </View>
             )}
           </React.Fragment>
         );
@@ -163,13 +190,17 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 }
 
 const stepStyles = StyleSheet.create({
-  container: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 20 },
+  container: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', marginBottom: 24, paddingHorizontal: 16 },
+  stepCol: { alignItems: 'center', flex: 1 },
   dot: { width: 28, height: 28, borderRadius: 14, backgroundColor: '#F0F0F0', alignItems: 'center', justifyContent: 'center' },
   dotActive: { backgroundColor: '#4CAF50' },
   dotDone: { backgroundColor: '#A5D6A7' },
   dotText: { fontSize: 12, fontWeight: '700', color: '#999' },
   dotTextActive: { color: '#fff' },
-  line: { width: 40, height: 2, backgroundColor: '#E0E0E0' },
+  label: { fontSize: 10, color: '#999', marginTop: 6, fontWeight: '600', textAlign: 'center' },
+  labelActive: { color: '#4CAF50' },
+  lineWrap: { position: 'absolute', top: 14, left: 0, right: 0, paddingHorizontal: 50, flexDirection: 'row' },
+  line: { flex: 1, height: 2, backgroundColor: '#E0E0E0', marginHorizontal: 8 },
   lineDone: { backgroundColor: '#A5D6A7' },
 });
 
@@ -179,7 +210,7 @@ export default function AccommodationScreen() {
   const { accommodations, addAccommodation } = useAppStore();
 
   // Navigation state
-  const [screen, setScreen] = useState<'overview' | 'hub' | 'pdfUpload' | 'pdfReview' | 'gmailIntro' | 'gmailResults' | 'manual1' | 'manual2' | 'manual3' | 'success'>('overview');
+  const [screen, setScreen] = useState<'overview' | 'hub' | 'pdfUpload' | 'pdfReview' | 'gmailIntro' | 'gmailResults' | 'manual1' | 'manual2' | 'manual3' | 'manual4' | 'success' | 'reuse'>('overview');
 
   // Manual form state
   const [name, setName] = useState('');
@@ -227,7 +258,6 @@ export default function AccommodationScreen() {
   };
 
   const handleImportGmail = () => {
-    // Import selected accommodations
     const selected = GMAIL_RESULTS.filter((g) => gmailSelections[g.id]);
     selected.forEach((g) => {
       addAccommodation({
@@ -262,6 +292,21 @@ export default function AccommodationScreen() {
     setScreen('success');
   };
 
+  const handleReuseTrip = (trip: typeof PREVIOUS_TRIPS[0]) => {
+    addAccommodation({
+      name: trip.name,
+      platform: trip.platform,
+      address: trip.location,
+      checkInDate: '',
+      checkInTime: '',
+      checkOutDate: '',
+      checkOutTime: '',
+      bookingRef: '',
+      status: 'UPCOMING',
+    });
+    setScreen('success');
+  };
+
   const goToOverview = () => {
     setScreen('overview');
     resetForm();
@@ -275,11 +320,11 @@ export default function AccommodationScreen() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-            <Text style={styles.backIcon}>‹</Text>
+            <ArrowLeftIcon size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Accommodation</Text>
           <TouchableOpacity onPress={() => setScreen('hub')}>
-            <Text style={{ fontSize: 22 }}>＋</Text>
+            <PlusIcon size={24} />
           </TouchableOpacity>
         </View>
 
@@ -300,7 +345,7 @@ export default function AccommodationScreen() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={goToOverview}>
-            <Text style={styles.backIcon}>‹</Text>
+            <ArrowLeftIcon size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Accommodation</Text>
           <View style={{ width: 32 }} />
@@ -313,10 +358,9 @@ export default function AccommodationScreen() {
               <View style={[hubStyles.illHill, { left: -10, backgroundColor: '#C8E6C9' }]} />
               <View style={[hubStyles.illHill, { right: -10, backgroundColor: '#A5D6A7', width: 100 }]} />
             </View>
-            <Text style={{ fontSize: 64, marginTop: 10 }}>🧳</Text>
-            <Text style={[hubStyles.illDecor, { left: 20, top: 20 }]}>✨</Text>
-            <Text style={[hubStyles.illDecor, { right: 30, top: 16 }]}>🌿</Text>
-            <Text style={[hubStyles.illDecor, { left: 50, top: 40 }]}>🍃</Text>
+            <SuitcaseIcon size={72} color="#4CAF50" />
+            <Sparkle color="#FFD700" size={14} style={{ position: 'absolute', left: 30, top: 20 }} />
+            <Sparkle color="#4CAF50" size={10} style={{ position: 'absolute', right: 40, top: 16 }} />
           </View>
 
           <Text style={hubStyles.heading}>Add Accommodation</Text>
@@ -325,28 +369,28 @@ export default function AccommodationScreen() {
           {/* Options */}
           <View style={hubStyles.optionsCard}>
             <HubOption
-              icon="📄"
+              icon={<PdfIcon size={22} />}
               title="Import booking confirmation"
               subtitle="Upload PDF from Airbnb, Booking, Agoda and more"
               onPress={() => setScreen('pdfUpload')}
             />
             <HubOption
-              icon="📧"
+              icon={<GmailIcon size={22} />}
               title="Import from Gmail"
               subtitle="Find accommodation emails from your inbox"
               onPress={() => setScreen('gmailIntro')}
             />
             <HubOption
-              icon="✏️"
+              icon={<EditPencilIcon size={22} />}
               title="Add manually"
               subtitle="Enter accommodation details yourself"
               onPress={() => setScreen('manual1')}
             />
             <HubOption
-              icon="🧳"
+              icon={<ReuseIcon size={22} />}
               title="Reuse from previous trips"
               subtitle="Add a place you've stayed before"
-              onPress={() => {}}
+              onPress={() => setScreen('reuse')}
               last
             />
           </View>
@@ -368,7 +412,7 @@ export default function AccommodationScreen() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('hub')}>
-            <Text style={styles.backIcon}>‹</Text>
+            <ArrowLeftIcon size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Import from PDF</Text>
           <View style={{ width: 32 }} />
@@ -381,23 +425,23 @@ export default function AccommodationScreen() {
               <View style={[pdfStyles.illHill, { left: -10, backgroundColor: '#C8E6C9' }]} />
               <View style={[pdfStyles.illHill, { right: -10, backgroundColor: '#A5D6A7', width: 100 }]} />
             </View>
-            <Text style={{ fontSize: 64 }}>📄</Text>
-            <Text style={[pdfStyles.illDecor, { left: 30, top: 20 }]}>✨</Text>
-            <Text style={[pdfStyles.illDecor, { right: 40, top: 16 }]}>🍃</Text>
+            <PdfIcon size={72} color="#F44336" />
+            <Sparkle color="#FFD700" size={14} style={{ position: 'absolute', left: 30, top: 20 }} />
+            <Sparkle color="#4CAF50" size={10} style={{ position: 'absolute', right: 40, top: 16 }} />
           </View>
 
           <Text style={pdfStyles.heading}>Upload booking confirmation</Text>
           <Text style={pdfStyles.sub}>We'll extract the details for you</Text>
 
-          {/* Upload box */}
-          <View style={pdfStyles.uploadBox}>
-            <Text style={{ fontSize: 32, marginBottom: 8 }}>⬆️</Text>
-            <Text style={pdfStyles.uploadText}>Drag & drop your PDF here</Text>
-            <Text style={pdfStyles.uploadOr}>or</Text>
-            <TouchableOpacity style={pdfStyles.chooseBtn} onPress={() => setScreen('pdfReview')}>
+          {/* Mobile-friendly upload */}
+          <TouchableOpacity style={pdfStyles.uploadBox} onPress={() => setScreen('pdfReview')} activeOpacity={0.8}>
+            <UploadCloudIcon size={48} color="#4CAF50" />
+            <Text style={pdfStyles.uploadText}>Tap to upload your PDF</Text>
+            <Text style={pdfStyles.uploadSub}>Browse files from your device</Text>
+            <View style={pdfStyles.chooseBtn}>
               <Text style={pdfStyles.chooseBtnText}>Choose file</Text>
-            </TouchableOpacity>
-          </View>
+            </View>
+          </TouchableOpacity>
 
           <Text style={pdfStyles.hint}>Works with Airbnb, Booking.com, Agoda and more</Text>
         </ScrollView>
@@ -411,7 +455,7 @@ export default function AccommodationScreen() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('pdfUpload')}>
-            <Text style={styles.backIcon}>‹</Text>
+            <ArrowLeftIcon size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Review & Confirm</Text>
           <View style={{ width: 32 }} />
@@ -424,9 +468,9 @@ export default function AccommodationScreen() {
               <View style={[reviewStyles.heroHill, { left: -10, backgroundColor: '#C8E6C9' }]} />
               <View style={[reviewStyles.heroHill, { right: -10, backgroundColor: '#A5D6A7', width: 100 }]} />
             </View>
-            <Text style={{ fontSize: 64 }}>🏡</Text>
-            <Text style={[reviewStyles.heroDecor, { left: 20, top: 20 }]}>🌴</Text>
-            <Text style={[reviewStyles.heroDecor, { right: 30, top: 16 }]}>🌴</Text>
+            <HouseIcon size={72} color="#4CAF50" />
+            <Sparkle color="#FFD700" size={14} style={{ position: 'absolute', left: 20, top: 20 }} />
+            <Sparkle color="#4CAF50" size={10} style={{ position: 'absolute', right: 30, top: 16 }} />
           </View>
 
           <Text style={reviewStyles.foundText}>We found these details in your PDF</Text>
@@ -434,7 +478,7 @@ export default function AccommodationScreen() {
           {/* Details card */}
           <View style={reviewStyles.detailsCard}>
             <ReviewRow label="Property name" value="Villa Padi Ubud" />
-            <ReviewRow label="Platform" value="Airbnb" icon="🏠" />
+            <ReviewRow label="Platform" value="Airbnb" icon={<HouseIcon size={16} color="#4CAF50" />} />
             <ReviewRow label="Address" value="Jl. Monkey Forest, Ubud\nGianyar, Bali 80571" />
             <ReviewRow label="Check-in" value="16 May 2024 · 19:00" />
             <ReviewRow label="Check-out" value="20 May 2024 · 11:00" />
@@ -463,7 +507,7 @@ export default function AccommodationScreen() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('hub')}>
-            <Text style={styles.backIcon}>‹</Text>
+            <ArrowLeftIcon size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Import from Gmail</Text>
           <View style={{ width: 32 }} />
@@ -476,9 +520,9 @@ export default function AccommodationScreen() {
               <View style={[gmailIntroStyles.illHill, { left: -10, backgroundColor: '#C8E6C9' }]} />
               <View style={[gmailIntroStyles.illHill, { right: -10, backgroundColor: '#A5D6A7', width: 100 }]} />
             </View>
-            <Text style={{ fontSize: 64 }}>📧</Text>
-            <Text style={[gmailIntroStyles.illDecor, { left: 30, top: 20 }]}>✨</Text>
-            <Text style={[gmailIntroStyles.illDecor, { right: 40, top: 16 }]}>🔍</Text>
+            <GmailIcon size={72} color="#EA4335" />
+            <Sparkle color="#FFD700" size={14} style={{ position: 'absolute', left: 30, top: 20 }} />
+            <Sparkle color="#4CAF50" size={10} style={{ position: 'absolute', right: 40, top: 16 }} />
           </View>
 
           <Text style={gmailIntroStyles.heading}>Find accommodations{'\n'}in your inbox</Text>
@@ -486,9 +530,9 @@ export default function AccommodationScreen() {
 
           {/* Benefits */}
           <View style={gmailIntroStyles.benefitsCard}>
-            <BenefitItem icon="🔒" title="Secure & private" desc="We only read booking emails" />
-            <BenefitItem icon="✅" title="You're in control" desc="Choose what to import" />
-            <BenefitItem icon="⚡" title="Fast & easy" desc="Save time and stay organized" last />
+            <BenefitItem icon={<LockIcon size={22} color="#4CAF50" />} title="Secure & private" desc="We only read booking emails" />
+            <BenefitItem icon={<ControlIcon size={22} color="#FF9800" />} title="You're in control" desc="Choose what to import" />
+            <BenefitItem icon={<LightningIcon size={22} color="#FFEB3B" />} title="Fast & easy" desc="Save time and stay organized" last />
           </View>
 
           <TouchableOpacity style={gmailIntroStyles.connectBtn} onPress={() => setScreen('gmailResults')}>
@@ -506,7 +550,7 @@ export default function AccommodationScreen() {
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('gmailIntro')}>
-            <Text style={styles.backIcon}>‹</Text>
+            <ArrowLeftIcon size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Import from Gmail</Text>
           <View style={{ width: 32 }} />
@@ -527,10 +571,10 @@ export default function AccommodationScreen() {
                   activeOpacity={0.7}
                 >
                   <View style={[gmailResultsStyles.checkbox, gmailSelections[item.id] && gmailResultsStyles.checkboxChecked]}>
-                    {gmailSelections[item.id] && <Text style={{ fontSize: 12, color: '#fff', fontWeight: '800' }}>✓</Text>}
+                    {gmailSelections[item.id] && <CheckIcon size={14} color="#fff" />}
                   </View>
                   <View style={gmailResultsStyles.iconBg}>
-                    <Text style={{ fontSize: 24 }}>{item.emoji}</Text>
+                    {getPlatformIcon(item.platform, 24)}
                   </View>
                   <View style={gmailResultsStyles.info}>
                     <Text style={gmailResultsStyles.name}>{item.name}</Text>
@@ -557,14 +601,61 @@ export default function AccommodationScreen() {
     );
   }
 
-  // ── 7. MANUAL STEP 1 ──
+  // ── 7. REUSE PREVIOUS TRIPS ──
+  if (screen === 'reuse') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('hub')}>
+            <ArrowLeftIcon size={24} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Reuse Previous Trips</Text>
+          <View style={{ width: 32 }} />
+        </View>
+
+        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+          <Text style={reuseStyles.subtitle}>Select a place you've stayed before</Text>
+
+          <View style={reuseStyles.card}>
+            {PREVIOUS_TRIPS.map((trip, index) => (
+              <View key={trip.id}>
+                <TouchableOpacity
+                  style={reuseStyles.row}
+                  onPress={() => handleReuseTrip(trip)}
+                  activeOpacity={0.7}
+                >
+                  <View style={reuseStyles.iconBg}>
+                    {getPlatformIcon(trip.platform, 28)}
+                  </View>
+                  <View style={reuseStyles.info}>
+                    <Text style={reuseStyles.name}>{trip.name}</Text>
+                    <Text style={reuseStyles.location}>{trip.location}</Text>
+                    <View style={reuseStyles.metaRow}>
+                      <Text style={reuseStyles.meta}>{trip.dates}</Text>
+                      <Text style={reuseStyles.meta}> · {trip.nights} nights</Text>
+                    </View>
+                  </View>
+                  <ChevronRightIcon size={20} />
+                </TouchableOpacity>
+                {index < PREVIOUS_TRIPS.length - 1 && <View style={reuseStyles.divider} />}
+              </View>
+            ))}
+          </View>
+
+          <View style={{ height: 24 }} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // ── 8. MANUAL STEP 1 ──
   if (screen === 'manual1') {
     const canContinue = name.trim() && platform && address.trim();
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('hub')}>
-            <Text style={styles.backIcon}>✕</Text>
+            <CloseIcon size={22} />
           </TouchableOpacity>
           <Text style={styles.title}>Add Manually</Text>
           <View style={{ width: 32 }} />
@@ -585,7 +676,7 @@ export default function AccommodationScreen() {
                 style={[manualStyles.platformChip, platform === p && manualStyles.platformChipActive]}
                 onPress={() => setPlatform(p)}
               >
-                <Text style={{ fontSize: 16, marginRight: 4 }}>{PLATFORM_ICONS[p]}</Text>
+                {getPlatformIcon(p, 18)}
                 <Text style={[manualStyles.platformText, platform === p && manualStyles.platformTextActive]}>{p}</Text>
               </TouchableOpacity>
             ))}
@@ -607,14 +698,14 @@ export default function AccommodationScreen() {
     );
   }
 
-  // ── 8. MANUAL STEP 2 ──
+  // ── 9. MANUAL STEP 2 ──
   if (screen === 'manual2') {
     const canContinue = checkInDate.trim() && checkOutDate.trim();
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('manual1')}>
-            <Text style={styles.backIcon}>‹</Text>
+            <ArrowLeftIcon size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Add Manually</Text>
           <View style={{ width: 32 }} />
@@ -626,13 +717,13 @@ export default function AccommodationScreen() {
           <Text style={manualStyles.sectionTitle}>Dates</Text>
 
           <View style={fStyles.row}>
-            <DateTimeInput label="Check-in date" placeholder="16 May 2024" value={checkInDate} onChangeText={setCheckInDate} icon="📅" />
-            <DateTimeInput label="Check-in time" placeholder="19:00" value={checkInTime} onChangeText={setCheckInTime} icon="🕐" />
+            <DateTimeInput label="Check-in date" placeholder="16 May 2024" value={checkInDate} onChangeText={setCheckInDate} icon="calendar" />
+            <DateTimeInput label="Check-in time" placeholder="19:00" value={checkInTime} onChangeText={setCheckInTime} icon="clock" />
           </View>
 
           <View style={fStyles.row}>
-            <DateTimeInput label="Check-out date" placeholder="20 May 2024" value={checkOutDate} onChangeText={setCheckOutDate} icon="📅" />
-            <DateTimeInput label="Check-out time" placeholder="11:00" value={checkOutTime} onChangeText={setCheckOutTime} icon="🕐" />
+            <DateTimeInput label="Check-out date" placeholder="20 May 2024" value={checkOutDate} onChangeText={setCheckOutDate} icon="calendar" />
+            <DateTimeInput label="Check-out time" placeholder="11:00" value={checkOutTime} onChangeText={setCheckOutTime} icon="clock" />
           </View>
 
           <View style={manualStyles.btnRow}>
@@ -654,13 +745,13 @@ export default function AccommodationScreen() {
     );
   }
 
-  // ── 9. MANUAL STEP 3 ──
+  // ── 10. MANUAL STEP 3 ──
   if (screen === 'manual3') {
     return (
       <SafeAreaView style={styles.safe} edges={['top']}>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('manual2')}>
-            <Text style={styles.backIcon}>‹</Text>
+            <ArrowLeftIcon size={24} />
           </TouchableOpacity>
           <Text style={styles.title}>Add Manually</Text>
           <View style={{ width: 32 }} />
@@ -679,9 +770,9 @@ export default function AccommodationScreen() {
                 style={[manualStyles.amenityChip, selectedAmenities.includes(a.name) && manualStyles.amenityChipActive]}
                 onPress={() => toggleAmenity(a.name)}
               >
-                <Text style={{ fontSize: 22, marginBottom: 4 }}>{a.emoji}</Text>
+                {getAmenityIcon(a.name, 22)}
                 <Text style={[manualStyles.amenityText, selectedAmenities.includes(a.name) && manualStyles.amenityTextActive]}>
-                  {a.name}
+                  {a.label}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -694,7 +785,7 @@ export default function AccommodationScreen() {
             <TouchableOpacity style={manualStyles.backBtn2} onPress={() => setScreen('manual2')}>
               <Text style={manualStyles.backBtn2Text}>Back</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={manualStyles.continueBtn2} onPress={handleSaveManual}>
+            <TouchableOpacity style={manualStyles.continueBtn2} onPress={() => setScreen('manual4')}>
               <Text style={manualStyles.continueBtn2Text}>Continue</Text>
             </TouchableOpacity>
           </View>
@@ -705,7 +796,52 @@ export default function AccommodationScreen() {
     );
   }
 
-  // ── 10. SUCCESS ──
+  // ── 11. MANUAL STEP 4 (REVIEW) ──
+  if (screen === 'manual4') {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => setScreen('manual3')}>
+            <ArrowLeftIcon size={24} />
+          </TouchableOpacity>
+          <Text style={styles.title}>Add Manually</Text>
+          <View style={{ width: 32 }} />
+        </View>
+
+        <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+          <StepIndicator current={4} total={4} />
+
+          <Text style={manualStyles.sectionTitle}>Review</Text>
+          <Text style={manualStyles.sectionSub}>Confirm your accommodation details</Text>
+
+          <View style={reviewStyles.detailsCard}>
+            <ReviewRow label="Property name" value={name} />
+            <ReviewRow label="Platform" value={platform} icon={getPlatformIcon(platform, 16)} />
+            <ReviewRow label="Address" value={address} />
+            <ReviewRow label="Check-in" value={`${checkInDate} ${checkInTime ? '· ' + checkInTime : ''}`} />
+            <ReviewRow label="Check-out" value={`${checkOutDate} ${checkOutTime ? '· ' + checkOutTime : ''}`} />
+            {selectedAmenities.length > 0 && (
+              <ReviewRow label="Amenities" value={selectedAmenities.join(', ')} />
+            )}
+            {bookingRef ? <ReviewRow label="Booking reference" value={bookingRef} /> : null}
+            {priceForStay ? <ReviewRow label="Price" value={priceForStay} last /> : <ReviewRow label="Price" value="—" last />}
+          </View>
+
+          <TouchableOpacity style={reviewStyles.confirmBtn} onPress={handleSaveManual}>
+            <Text style={reviewStyles.confirmBtnText}>Save Accommodation</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={reviewStyles.editBtn} onPress={() => setScreen('manual1')}>
+            <Text style={reviewStyles.editBtnText}>Edit details</Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 24 }} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
+  // ── 12. SUCCESS ──
   if (screen === 'success') {
     const lastAdded = accommodations[0];
     return (
@@ -717,12 +853,12 @@ export default function AccommodationScreen() {
               <View style={[successStyles.illHill, { left: -10, backgroundColor: '#C8E6C9' }]} />
               <View style={[successStyles.illHill, { right: -10, backgroundColor: '#A5D6A7', width: 100 }]} />
             </View>
-            <Text style={{ fontSize: 72 }}>🏡</Text>
+            <HouseIcon size={80} color="#4CAF50" />
             <View style={successStyles.checkCircle}>
-              <Text style={{ fontSize: 20, color: '#fff' }}>✓</Text>
+              <CheckIcon size={20} color="#fff" />
             </View>
-            <Text style={[successStyles.illDecor, { left: 30, top: 20 }]}>✨</Text>
-            <Text style={[successStyles.illDecor, { right: 40, top: 16 }]}>🍃</Text>
+            <Sparkle color="#FFD700" size={14} style={{ position: 'absolute', left: 30, top: 20 }} />
+            <Sparkle color="#4CAF50" size={10} style={{ position: 'absolute', right: 40, top: 16 }} />
           </View>
 
           <Text style={successStyles.heading}>All set!</Text>
@@ -740,7 +876,7 @@ export default function AccommodationScreen() {
               {lastAdded?.checkInDate || '16 – 20 May 2024'} · {lastAdded?.nights || 4} nights
             </Text>
             <View style={successStyles.previewAddressRow}>
-              <Text style={{ fontSize: 14 }}>📍</Text>
+              <MapPinIcon size={16} color="#F44336" />
               <Text style={successStyles.previewAddress} numberOfLines={2}>
                 {lastAdded?.address || 'Jl. Monkey Forest, Ubud\nGianyar, Bali 80571'}
               </Text>
@@ -761,7 +897,6 @@ export default function AccommodationScreen() {
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 function AccommodationCard({ acc }: { acc: AccommodationEntry }) {
-  const platformIcon = PLATFORM_ICONS[acc.platform] ?? '📋';
   const platformUrl = PLATFORM_URLS[acc.platform];
 
   const openPlatform = () => {
@@ -794,10 +929,7 @@ function AccommodationCard({ acc }: { acc: AccommodationEntry }) {
                 <View style={[cardStyles.hill, { right: -10, backgroundColor: '#66BB6A', width: 120 }]} />
               </>
             )}
-            <Text style={[cardStyles.heroEmoji, acc.photoUrl && { bottom: 8 }]}>🏡</Text>
-            <Text style={[cardStyles.sd, { left: 14, bottom: 16 }]}>🌴</Text>
-            <Text style={[cardStyles.sd, { right: 14, bottom: 16 }]}>🌴</Text>
-            <Text style={[cardStyles.sd, { left: 50, top: 14 }]}>☁️</Text>
+            <HouseIcon size={64} color="#fff" />
             <Sparkle color="#FFD700" size={12} style={{ position: 'absolute', right: 30, top: 18 }} />
           </View>
         </View>
@@ -837,7 +969,7 @@ function AccommodationCard({ acc }: { acc: AccommodationEntry }) {
       {/* Address */}
       <View style={cardStyles.addressRow}>
         <View style={cardStyles.addressIconBg}>
-          <Text style={{ fontSize: 18 }}>📍</Text>
+          <MapPinIcon size={20} color="#F44336" />
         </View>
         <Text style={cardStyles.addressText} numberOfLines={2}>{acc.address}</Text>
       </View>
@@ -849,7 +981,7 @@ function AccommodationCard({ acc }: { acc: AccommodationEntry }) {
       <View style={cardStyles.amenitiesRow}>
         {displayedAmenities.map((a) => (
           <View key={a.name} style={cardStyles.amenityChip}>
-            <Text style={{ fontSize: 18 }}>{a.emoji}</Text>
+            {getAmenityIcon(a.name, 18)}
             <Text style={cardStyles.amenityName}>{a.name}</Text>
           </View>
         ))}
@@ -864,12 +996,12 @@ function AccommodationCard({ acc }: { acc: AccommodationEntry }) {
         <View style={cardStyles.bookingActions}>
           {platformUrl ? (
             <TouchableOpacity style={cardStyles.platformBtn} onPress={openPlatform}>
-              <Text style={{ fontSize: 14 }}>{platformIcon}</Text>
+              {getPlatformIcon(acc.platform, 16)}
               <Text style={cardStyles.platformBtnText}>Open in {acc.platform}</Text>
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity style={cardStyles.downloadBtn}>
-            <Text style={{ fontSize: 18 }}>⬇</Text>
+            <DownloadIcon size={20} color="#666" />
           </TouchableOpacity>
         </View>
       </View>
@@ -879,29 +1011,29 @@ function AccommodationCard({ acc }: { acc: AccommodationEntry }) {
 
 // ─── Hub Option ─────────────────────────────────────────────────────────────
 function HubOption({ icon, title, subtitle, onPress, last }: {
-  icon: string; title: string; subtitle: string; onPress: () => void; last?: boolean;
+  icon: React.ReactNode; title: string; subtitle: string; onPress: () => void; last?: boolean;
 }) {
   return (
     <TouchableOpacity style={[hubStyles.option, !last && hubStyles.optionBorder]} onPress={onPress} activeOpacity={0.7}>
       <View style={hubStyles.optionIconBg}>
-        <Text style={{ fontSize: 22 }}>{icon}</Text>
+        {icon}
       </View>
       <View style={hubStyles.optionTextWrap}>
         <Text style={hubStyles.optionTitle}>{title}</Text>
         <Text style={hubStyles.optionSubtitle}>{subtitle}</Text>
       </View>
-      <Text style={hubStyles.optionChevron}>›</Text>
+      <ChevronRightIcon size={20} />
     </TouchableOpacity>
   );
 }
 
 // ─── Review Row ─────────────────────────────────────────────────────────────
-function ReviewRow({ label, value, icon, last }: { label: string; value: string; icon?: string; last?: boolean }) {
+function ReviewRow({ label, value, icon, last }: { label: string; value: string; icon?: React.ReactNode; last?: boolean }) {
   return (
     <View style={[reviewStyles.row, !last && reviewStyles.rowBorder]}>
       <Text style={reviewStyles.rowLabel}>{label}</Text>
       <View style={reviewStyles.rowValueWrap}>
-        {icon && <Text style={{ fontSize: 14, marginRight: 4 }}>{icon}</Text>}
+        {icon}
         <Text style={reviewStyles.rowValue}>{value}</Text>
       </View>
     </View>
@@ -909,11 +1041,11 @@ function ReviewRow({ label, value, icon, last }: { label: string; value: string;
 }
 
 // ─── Benefit Item ───────────────────────────────────────────────────────────
-function BenefitItem({ icon, title, desc, last }: { icon: string; title: string; desc: string; last?: boolean }) {
+function BenefitItem({ icon, title, desc, last }: { icon: React.ReactNode; title: string; desc: string; last?: boolean }) {
   return (
     <View style={[gmailIntroStyles.benefitRow, !last && gmailIntroStyles.benefitBorder]}>
-      <Text style={{ fontSize: 22, marginRight: 12 }}>{icon}</Text>
-      <View>
+      {icon}
+      <View style={{ marginLeft: 12 }}>
         <Text style={gmailIntroStyles.benefitTitle}>{title}</Text>
         <Text style={gmailIntroStyles.benefitDesc}>{desc}</Text>
       </View>
@@ -951,12 +1083,10 @@ const cardStyles = StyleSheet.create({
   heroImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' },
   heroOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.15)' },
   heroOverlayNoImage: { backgroundColor: 'transparent' },
-  heroScene: { flex: 1, position: 'relative', overflow: 'hidden' },
+  heroScene: { flex: 1, position: 'relative', overflow: 'hidden', alignItems: 'center', justifyContent: 'center' },
   sky: { ...StyleSheet.absoluteFillObject, backgroundColor: '#81D4FA' },
   ground: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 40, backgroundColor: '#A5D6A7' },
   hill: { position: 'absolute', bottom: 0, width: 140, height: 70, borderRadius: 50 },
-  heroEmoji: { position: 'absolute', bottom: 12, left: 0, right: 0, textAlign: 'center', fontSize: 64 },
-  sd: { position: 'absolute', fontSize: 24 },
 
   nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 },
   propertyName: { fontSize: 20, fontWeight: '800', color: '#1A1A1A', flex: 1, marginRight: 10 },
@@ -1035,9 +1165,9 @@ const pdfStyles = StyleSheet.create({
     width: '100%', borderWidth: 2, borderColor: '#A5D6A7', borderStyle: 'dashed',
     borderRadius: 16, paddingVertical: 32, alignItems: 'center', backgroundColor: '#FAFFF8',
   },
-  uploadText: { fontSize: 15, fontWeight: '600', color: '#555', marginTop: 4 },
-  uploadOr: { fontSize: 13, color: '#888', marginVertical: 8 },
-  chooseBtn: { backgroundColor: '#4CAF50', borderRadius: 12, paddingHorizontal: 24, paddingVertical: 12 },
+  uploadText: { fontSize: 16, fontWeight: '700', color: '#1A1A1A', marginTop: 12 },
+  uploadSub: { fontSize: 13, color: '#888', marginTop: 4, marginBottom: 16 },
+  chooseBtn: { backgroundColor: '#4CAF50', borderRadius: 12, paddingHorizontal: 28, paddingVertical: 12 },
   chooseBtnText: { color: '#fff', fontSize: 15, fontWeight: '700' },
   hint: { fontSize: 12, color: '#888', marginTop: 16, textAlign: 'center' },
 });
@@ -1057,7 +1187,7 @@ const reviewStyles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 12 },
   rowBorder: { borderBottomWidth: 1, borderBottomColor: '#F5F5F5' },
   rowLabel: { fontSize: 13, color: '#888', flex: 1 },
-  rowValueWrap: { flexDirection: 'row', alignItems: 'center', maxWidth: '55%' },
+  rowValueWrap: { flexDirection: 'row', alignItems: 'center', maxWidth: '55%', gap: 6 },
   rowValue: { fontSize: 13, fontWeight: '600', color: '#1A1A1A', textAlign: 'right' },
   confirmBtn: {
     backgroundColor: '#4CAF50', borderRadius: 14, paddingVertical: 16,
@@ -1130,13 +1260,31 @@ const gmailResultsStyles = StyleSheet.create({
   importBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });
 
+// ─── Reuse Styles ───────────────────────────────────────────────────────────
+const reuseStyles = StyleSheet.create({
+  subtitle: { fontSize: 14, color: '#888', marginHorizontal: 16, marginTop: 8, marginBottom: 16 },
+  card: {
+    backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 16,
+    borderWidth: 1, borderColor: '#F0F0F0', paddingHorizontal: 14, paddingVertical: 4,
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 6, elevation: 1,
+  },
+  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 14, gap: 12 },
+  iconBg: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#F5F5F5', alignItems: 'center', justifyContent: 'center' },
+  info: { flex: 1 },
+  name: { fontSize: 15, fontWeight: '700', color: '#1A1A1A' },
+  location: { fontSize: 13, color: '#666', marginTop: 2 },
+  metaRow: { flexDirection: 'row', marginTop: 3 },
+  meta: { fontSize: 12, color: '#888' },
+  divider: { height: 1, backgroundColor: '#F5F5F5' },
+});
+
 // ─── Manual Styles ──────────────────────────────────────────────────────────
 const manualStyles = StyleSheet.create({
   sectionTitle: { fontSize: 18, fontWeight: '800', color: '#1A1A1A', marginBottom: 4, textAlign: 'center' },
   sectionSub: { fontSize: 13, color: '#888', textAlign: 'center', marginBottom: 16 },
   platformRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
   platformChip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingHorizontal: 12, paddingVertical: 8, borderRadius: 12,
     borderWidth: 1, borderColor: '#EBEBEB', backgroundColor: '#F5F5F5',
   },
@@ -1169,6 +1317,7 @@ const manualStyles = StyleSheet.create({
     aspectRatio: 1,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: '#F5F5F5', borderRadius: 14, borderWidth: 1.5, borderColor: 'transparent',
+    gap: 4,
   },
   amenityChipActive: { backgroundColor: '#E8F5E9', borderColor: '#4CAF50' },
   amenityText: { fontSize: 11, fontWeight: '600', color: '#666', marginTop: 2 },
